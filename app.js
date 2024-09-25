@@ -1,13 +1,13 @@
 const express = require('express');
 const { connectDB } = require('./config/db'); // การเชื่อมต่อกับฐานข้อมูล
-require('dotenv').config(); // ใช้ dotenv สำหรับโหลดตัวแปรสิ่งแวดล้อม
+require('dotenv').config(); // ใช้ dotenv สำหรับโหลดตัวแปร environment
 
 // Import routes
 const employeeRoutes = require('./routes/employeeRoutes'); // เส้นทางสำหรับพนักงาน
 const carRoutes = require('./routes/carRoutes'); // เส้นทางสำหรับรถยนต์
 const customerRoutes = require('./routes/customerRoutes'); // เส้นทางสำหรับลูกค้า
 const vlogRoutes = require('./routes/vlogRoutes'); // เส้นทางสำหรับ Vlogs
-const websiteTrafficRoutes = require('./routes/websiteTrafficRoutes'); // เส้นทางสำหรับการจราจรเว็บไซต์
+const websiteTrafficRoutes = require('./routes/websiteTrafficRoutes'); // เส้นทางสำหรับการการเข้าชม
 const carCategoryRoutes = require('./routes/carCategoryRoutes'); // เส้นทางสำหรับประเภทของรถ
 const soldCarRoutes = require('./routes/soldCarRoutes'); // เส้นทางสำหรับรถที่ขายแล้ว
 
@@ -21,7 +21,7 @@ app.use('/api/employees', employeeRoutes); // เส้นทางสำหร�
 app.use('/api/cars', carRoutes); // เส้นทางสำหรับรถยนต์
 app.use('/api/customers', customerRoutes); // เส้นทางสำหรับลูกค้า
 app.use('/api/vlogs', vlogRoutes); // เส้นทางสำหรับ Vlogs
-app.use('/api/website-traffic', websiteTrafficRoutes); // เส้นทางสำหรับการจราจรเว็บไซต์
+app.use('/api/website-traffic', websiteTrafficRoutes); // เส้นทางสำหรับการการเข้าชม
 app.use('/api/car-categories', carCategoryRoutes); // เส้นทางสำหรับประเภทของรถ
 app.use('/api/sold-cars', soldCarRoutes); // เส้นทางสำหรับรถที่ขายแล้ว
 
