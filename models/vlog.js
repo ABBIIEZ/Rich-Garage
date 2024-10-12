@@ -19,10 +19,6 @@ const Vlog = sequelize.define('vlog', {
         type: DataTypes.TEXT,
         allowNull: false,
     },
-    date_posted: {
-        type: DataTypes.DATE,
-        allowNull: false,
-    },
     employee_id: {
         type: DataTypes.INTEGER,
         allowNull: false,

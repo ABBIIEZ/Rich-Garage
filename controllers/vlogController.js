@@ -23,6 +23,7 @@ exports.getVlogs = async (req, res) => {
         const vlogs = await Vlog.findAll();
         res.status(200).json(vlogs);
     } catch (err) {
+        console.error('Database query error:', err); // แสดงข้อผิดพลาดใน console
         res.status(400).json({ error: 'An error occurred during the operation.' });
     }
 };
