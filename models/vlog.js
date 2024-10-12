@@ -30,7 +30,7 @@ const Vlog = sequelize.define('vlog', {
 }, {
     tableName: 'vlog',
     timestamps: true,
-    paranoid: true, // เปิดใช้งาน soft delete
+
 });
 
 module.exports = Vlog;
