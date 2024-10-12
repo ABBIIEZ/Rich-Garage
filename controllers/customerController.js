@@ -1,55 +1,127 @@
-// controllers/customerController.js
-const { Customer } = require('../models/customer');
+const Customer = require('../models/customer');
+const bcrypt = require('bcrypt');
 
-// GET all customers
-exports.getAllCustomers = async (req, res) => {
+// สร้างลูกค้าใหม่
+exports.createCustomer = async (req, res) => {
+    const { email, password } = req.body;
+
+    // ตรวจสอบข้อมูลที่ต้องการก่อนบันทึก
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Please provide all required information.' });
+    }
+
     try {
-        const customers = await Customer.findAll();
-        res.status(200).json(customers);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+        // ตรวจสอบว่ามี email ซ้ำหรือไม่
+        const existingCustomer = await Customer.findOne({
+            where: { email }
+        });
+
+        if (existingCustomer) {
+            // ถ้ามีข้อมูลซ้ำ ให้ส่งข้อผิดพลาดกลับไป
+            return res.status(400).json({ error: 'This email is already in use.' });
+        }
+
+        // แฮชรหัสผ่านก่อนบันทึก
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // ถ้าไม่มีข้อมูลซ้ำ ให้สร้างลูกค้าใหม่
+        const customer = await Customer.create({ ...req.body, password: hashedPassword });
+        res.status(201).json(customer);
+
+    } catch (err) {
+        res.status(400).json({ error: 'An error occurred during the operation.' });
     }
 };
 
-// GET customer by ID
+// ฟังก์ชันสำหรับการล็อกอินลูกค้า
+exports.loginCustomer = async (req, res) => {
+    const { email, password } = req.body;
+
+    // ตรวจสอบข้อมูลที่ต้องการก่อนล็อกอิน
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Please provide email and password.' });
+    }
+
+    try {
+        // ค้นหาลูกค้าตามอีเมล
+        const customer = await Customer.findOne({ where: { email } });
+
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found.' });
+        }
+
+        // ตรวจสอบรหัสผ่าน
+        const isMatch = await bcrypt.compare(password, customer.password);
+        if (!isMatch) {
+            return res.status(400).json({ error: 'Invalid credentials.' });
+        }
+
+        // หากล็อกอินสำเร็จ
+        res.status(200).json({ message: 'Login successful', customer });
+    } catch (err) {
+        res.status(400).json({ error: 'An error occurred during the operation.' });
+    }
+};
+
+// อ่านข้อมูลลูกค้าทั้งหมด
+exports.getCustomer = async (req, res) => {
+    try {
+        const customers = await Customer.findAll(); // ดึงข้อมูลลูกค้าทั้งหมด
+        if (customers.length === 0) { // ตรวจสอบว่ามีลูกค้าหรือไม่
+            return res.status(404).json({ message: 'No customers found' });
+        }
+        res.status(200).json(customers); // ส่งข้อมูลลูกค้า
+    } catch (err) {
+        res.status(400).json({ error: 'An error occurred during the operation.' }); // ส่งข้อผิดพลาดถ้ามี
+    }
+};
+
+// อ่านข้อมูลลูกค้าตาม ID
 exports.getCustomerById = async (req, res) => {
     try {
         const customer = await Customer.findByPk(req.params.id);
-        if (!customer) return res.status(404).json({ message: 'Customer not found' });
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
         res.status(200).json(customer);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+    } catch (err) {
+        res.status(400).json({ error: 'An error occurred during the operation.' });
     }
 };
 
-// POST (create) a new customer
-exports.createCustomer = async (req, res) => {
-    try {
-        const newCustomer = await Customer.create(req.body);
-        res.status(201).json(newCustomer);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// PUT (update) customer by ID
+// แก้ไขข้อมูลลูกค้า
 exports.updateCustomer = async (req, res) => {
+    const { email } = req.body;
     try {
-        const updated = await Customer.update(req.body, { where: { customerID: req.params.id } });
-        if (!updated[0]) return res.status(404).json({ message: 'Customer not found' });
-        res.status(200).json({ message: 'Customer updated successfully' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+        const existingCustomer = await Customer.findOne({
+            where: { email: email }
+        });
+
+        if (existingCustomer) {
+            return res.status(400).json({ error: 'Email already exists' });
+        }
+
+        const customer = await Customer.findByPk(req.params.id);
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+        await customer.update(req.body);
+        res.status(200).json(customer);
+    } catch (err) {
+        res.status(400).json({ error: 'An error occurred during the operation.' });
     }
 };
 
-// DELETE customer by ID
+// ลบข้อมูลลูกค้า
 exports.deleteCustomer = async (req, res) => {
     try {
-        const deleted = await Customer.destroy({ where: { customerID: req.params.id } });
-        if (!deleted) return res.status(404).json({ message: 'Customer not found' });
-        res.status(200).json({ message: 'Customer deleted successfully' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+        const customer = await Customer.findByPk(req.params.id);
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+        await customer.destroy();
+        res.status(204).send();
+    } catch (err) {
+        res.status(400).json({ error: 'An error occurred during the operation.' });
     }
 };

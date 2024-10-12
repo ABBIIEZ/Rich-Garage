@@ -1,19 +1,24 @@
-const { Sequelize, DataTypes } = require('sequelize');
+const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 
-const WebsiteTraffic = sequelize.define('WebsiteTraffic', {
+const WebsiteTraffic = sequelize.define(' website_traffic', {
     websiteTrafficID: {
         type: DataTypes.INTEGER,
-        primaryKey: true,
         autoIncrement: true,
+        primaryKey: true,
     },
-    Province: {
+    province: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: false, // จังหวัดที่เข้าชม
     },
-    Timestamp: {
+    timestamp: {
         type: DataTypes.DATE,
-        allowNull: false,
+        allowNull: false, // เวลาที่เข้าชม 
+        defaultValue: DataTypes.NOW // กำหนดให้ใช้เวลาปัจจุบันเมื่อสร้างข้อมูลใหม่
+    },
+    viewCount: {
+        type: DataTypes.INTEGER,
+        defaultValue: 1, // จำนวนการเข้าชม 
     },
     page_view_count: {
         type: DataTypes.INTEGER,
@@ -21,18 +26,23 @@ const WebsiteTraffic = sequelize.define('WebsiteTraffic', {
     },
     car_id: {
         type: DataTypes.INTEGER,
+        allowNull: false,
         references: {
-            model: 'Cars',
-            key: 'carsID',
+            model: 'Car', // ชื่อรถยนต์
+            key: 'carID',
         },
     },
     customer_id: {
         type: DataTypes.INTEGER,
+        allowNull: false,
         references: {
-            model: 'Customers',
+            model: 'Customer', // ชื่อลูกค้า
             key: 'customerID',
         },
     },
+}, {
+    tableName: ' website_traffic',
+    paranoid: true, // เปิดใช้งาน soft delete
 });
 
 module.exports = WebsiteTraffic;

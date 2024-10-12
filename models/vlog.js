@@ -1,23 +1,23 @@
-const { Sequelize, DataTypes } = require('sequelize');
+const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 
-const Vlog = sequelize.define('Vlog', {
+const Vlog = sequelize.define('vlog', {
     vlogID: {
         type: DataTypes.INTEGER,
-        primaryKey: true,
         autoIncrement: true,
+        primaryKey: true,
     },
-    Title: {
+    title: {
         type: DataTypes.STRING,
         allowNull: false,
     },
-    Url: {
+    url: {
         type: DataTypes.STRING,
         allowNull: false,
     },
-    Description: {
+    description: {
         type: DataTypes.TEXT,
-        allowNull: true,
+        allowNull: false,
     },
     date_posted: {
         type: DataTypes.DATE,
@@ -25,11 +25,16 @@ const Vlog = sequelize.define('Vlog', {
     },
     employee_id: {
         type: DataTypes.INTEGER,
+        allowNull: false,
         references: {
-            model: 'Employees',
+            model: 'Employee',
             key: 'employeeID',
         },
     },
+}, {
+    tableName: 'vlog',
+    timestamps: true,
+    paranoid: true, // เปิดใช้งาน soft delete
 });
 
 module.exports = Vlog;

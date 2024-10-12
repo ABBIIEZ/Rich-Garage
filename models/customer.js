@@ -1,25 +1,62 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/db');
+const sequelize = require('../config/db');
+const bcrypt = require('bcrypt');
 
-const Customer = sequelize.define('Customer', {
+const Customer = sequelize.define('customer', {
     customerID: {
         type: DataTypes.INTEGER,
+        autoIncrement: true,
         primaryKey: true,
-        autoIncrement: true
     },
-    firstname: DataTypes.STRING,
-    lastname: DataTypes.STRING,
-    nickname: DataTypes.STRING,
+    firstName: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    lastName: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    nickName: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
     email: {
         type: DataTypes.STRING,
-        unique: true
+        allowNull: false,
+        unique: true,
     },
-    password: DataTypes.STRING,
-    phone: DataTypes.STRING,
-    age: DataTypes.INTEGER,
-    gender: DataTypes.ENUM('male', 'female', 'other'),
-    province: DataTypes.STRING,
-    language_preference: DataTypes.STRING
+    password: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    phone: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    age: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+    gender: {
+        type: DataTypes.ENUM('Male', 'Female', 'Other'),
+        allowNull: false,
+    },
+    province: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    language_preference: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+}, {
+    tableName: 'customer',
+    timestamps: true,
+});
+
+Customer.beforeCreate(async (customer) => {
+    const salt = await bcrypt.genSalt(10);
+    employee.password = await bcrypt.hash(customer.password, salt);
 });
 
 module.exports = Customer;

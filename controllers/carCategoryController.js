@@ -1,64 +1,88 @@
 const CarCategory = require('../models/carCategory');
+const Car = require('../models/car');
 
-// Get all car categories
-exports.getAllCarCategories = async (req, res) => {
+// สร้างหมวดหมู่รถใหม่
+exports.createCarCategory = async (req, res) => {
     try {
-        const categories = await CarCategory.findAll();
-        res.json(categories);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+        const { name } = req.body;
+
+        // ตรวจสอบว่าชื่อหมวดหมู่มีอยู่แล้วหรือไม่
+        const existingCategory = await CarCategory.findOne({ where: { name } });
+        if (existingCategory) {
+            return res.status(400).json({ error: 'Category already exists' });
+        }
+
+        const category = await CarCategory.create(req.body);
+        res.status(201).json(category);
+    } catch (err) {
+        res.status(400).json({ error: 'An error occurred during the operation.' });
     }
 };
 
-// Get a car category by ID
+// อ่านข้อมูลหมวดหมู่รถทั้งหมด
+exports.getCarCategories = async (req, res) => {
+    try {
+        const categories = await CarCategory.findAll();
+        res.status(200).json(categories);
+    } catch (err) {
+        res.status(400).json({ error: 'An error occurred during the operation.' });
+    }
+};
+
+// อ่านข้อมูลหมวดหมู่รถตาม ID
 exports.getCarCategoryById = async (req, res) => {
     try {
         const category = await CarCategory.findByPk(req.params.id);
         if (!category) {
-            return res.status(404).json({ message: 'Car category not found' });
+            return res.status(404).json({ error: 'Car Category not found' });
         }
-        res.json(category);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(200).json(category);
+    } catch (err) {
+        res.status(400).json({ error: 'An error occurred during the operation.' });
     }
 };
 
-// Create a new car category
-exports.createCarCategory = async (req, res) => {
+// แก้ไขหมวดหมู่รถ
+exports.updateCarCategory = async (req, res) => {
     try {
-        const { categoryName } = req.body; // Assuming you have a categoryName field
-        const newCategory = await CarCategory.create({ categoryName });
-        res.status(201).json(newCategory);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Update a car category by ID
-exports.updateCarCategoryById = async (req, res) => {
-    try {
-        const { categoryName } = req.body; // Assuming you have a categoryName field
+        const { name } = req.body;
         const category = await CarCategory.findByPk(req.params.id);
+
         if (!category) {
-            return res.status(404).json({ message: 'Car category not found' });
+            return res.status(404).json({ error: 'Car Category not found' });
         }
-        await category.update({ categoryName });
-        res.json(category);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+
+        // ตรวจสอบว่าชื่อใหม่ซ้ำกับหมวดหมู่อื่นหรือไม่
+        const existingCategory = await CarCategory.findOne({ where: { name } });
+        if (existingCategory && existingCategory.id !== category.id) {
+            return res.status(400).json({ error: 'Category name already in use' });
+        }
+
+        await category.update(req.body);
+        res.status(200).json(category);
+    } catch (err) {
+        res.status(400).json({ error: 'An error occurred during the operation.' });
     }
 };
 
-// Delete a car category by ID
-exports.deleteCarCategoryById = async (req, res) => {
+// ลบหมวดหมู่รถ
+exports.deleteCarCategory = async (req, res) => {
     try {
         const category = await CarCategory.findByPk(req.params.id);
+
         if (!category) {
-            return res.status(404).json({ message: 'Car category not found' });
+            return res.status(404).json({ error: 'Car Category not found' });
         }
+
+        // ตรวจสอบว่าหมวดหมู่มีรถที่เชื่อมโยงอยู่หรือไม่
+        const carsInCategory = await Car.findAll({ where: { category_id: req.params.id } });
+        if (carsInCategory.length > 0) {
+            return res.status(400).json({ error: 'Cannot delete category with cars associated' });
+        }
+
         await category.destroy();
-        res.json({ message: 'Car category deleted successfully' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(204).send();
+    } catch (err) {
+        res.status(400).json({ error: 'An error occurred during the operation.' });
     }
 };
