@@ -18,7 +18,15 @@ exports.createVlog = async (req, res) => {
 };
 
 // อ่านข้อมูล Vlog ทั้งหมด
-
+exports.getVlogs = async (req, res) => {
+    try {
+        const vlogs = await Vlog.findAll();
+        res.status(200).json(vlogs);
+    } catch (err) {
+        console.error('Database query error:', err); // แสดงข้อผิดพลาดใน console
+        res.status(400).json({ error: 'An error occurred during the operation.' });
+    }
+};
 
 // อ่านข้อมูล Vlog ตาม ID
 exports.getVlogById = async (req, res) => {
