@@ -1,5 +1,8 @@
 const Employee = require('../models/employee');
 const bcrypt = require('bcrypt');
+const generateToken = require('../middlewares/tokenGenerator');
+
+
 
 // สร้างพนักงานใหม่
 exports.createEmployee = async (req, res) => {
@@ -10,27 +13,36 @@ exports.createEmployee = async (req, res) => {
             return res.status(400).json({ error: 'Please provide all required fields.' });
         }
 
+        // ตรวจสอบว่ามีพนักงานที่ใช้ email นี้อยู่แล้วหรือไม่
+        const existingEmployee = await Employee.findOne({ where: { email } });
+        if (existingEmployee) {
+            return res.status(400).json({ error: 'Email already exists.' });
+        }
 
         // แฮชรหัสผ่านก่อนบันทึก
         const hashedPassword = await bcrypt.hash(password, 10);
         const employee = await Employee.create({
             ...req.body,
             password: hashedPassword, // บันทึกรหัสผ่านที่ถูกแฮช
+
         });
         res.status(201).json(employee);
     } catch (err) {
-        console.error(err);
-        res.status(400).json({ error: 'An error occurred during the operation.' });
+        res.status(500).json({ error: 'An error occurred during the operation.' });
     }
 };
+
 
 // อ่านข้อมูลพนักงานทั้งหมด
 exports.getEmployees = async (req, res) => {
     try {
         const employees = await Employee.findAll();
+        if (employees.length === 0) {
+            return res.status(404).json({ message: 'No employees found' });
+        }
         res.status(200).json(employees);
     } catch (err) {
-        res.status(400).json({ error: 'An error occurred during the operation.' });
+        res.status(500).json({ error: 'An error occurred during the operation.' });
     }
 };
 
@@ -43,7 +55,7 @@ exports.getEmployeeById = async (req, res) => {
         }
         res.status(200).json(employee);
     } catch (err) {
-        res.status(400).json({ error: 'An error occurred during the operation.' });
+        res.status(500).json({ error: 'An error occurred during the operation.' });
     }
 };
 
@@ -65,7 +77,7 @@ exports.updateEmployee = async (req, res) => {
         res.status(200).json(employee);
     } catch (err) {
         console.error(err);
-        res.status(400).json({ error: 'An error occurred during the operation.' });
+        res.status(500).json({ error: 'An error occurred during the operation.' });
     }
 };
 
@@ -79,27 +91,42 @@ exports.deleteEmployee = async (req, res) => {
         await employee.destroy();
         res.status(204).send();
     } catch (err) {
-        res.status(400).json({ error: 'An error occurred during the operation.' });
+        res.status(500).json({ error: 'An error occurred during the operation.' });
     }
 };
 
-// ฟังก์ชันสำหรับเข้าสู่ระบบ
+
+
+// ฟังก์ชันสำหรับการล็อกอินพนักงาน
 exports.loginEmployee = async (req, res) => {
     try {
+        console.log('Request Body:', req.body); // แสดงข้อมูลที่ส่งมาใน request
         const employee = await Employee.findOne({ where: { email: req.body.email } });
+        console.log('Employee Found:', employee); // แสดงข้อมูลพนักงานที่ค้นพบ
         if (!employee) {
             return res.status(404).json({ error: 'Employee not found' });
         }
 
-        // ตรวจสอบรหัสผ่าน
+        // แสดงรหัสผ่านที่ป้อนเข้ามาและรหัสผ่านที่เก็บไว้ในฐานข้อมูล
+        console.log('Plain Password:', req.body.password); // รหัสผ่านที่ป้อนเข้ามา
+        console.log('Hashed Password:', employee.password); // รหัสผ่านที่เก็บในฐานข้อมูล
+
         const match = await bcrypt.compare(req.body.password, employee.password);
+        console.log('Password Match:', match); // แสดงผลการเปรียบเทียบ password
         if (!match) {
             return res.status(401).json({ error: 'Invalid password' });
         }
 
-        // ถ้ารหัสผ่านถูกต้อง สามารถส่งข้อมูลพนักงานหรือ Token ได้ที่นี่
-        res.status(200).json({ message: 'Login successful', employee });
+
+        // สร้าง token โดยใช้ employeeID 
+        const token = generateToken({ id: employee.employeeID, username: employee.firstname });
+        console.log('Token:', token);
+
+        // ส่งข้อมูลพนักงานและ Token
+        res.status(200).json({ message: 'Login successful', token });
     } catch (err) {
-        res.status(400).json({ error: 'An error occurred during the operation.' });
+        console.error('Error:', err);
+        res.status(500).json({ error: 'An error occurred during the operation.' });
     }
 };
+

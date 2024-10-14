@@ -29,9 +29,106 @@ exports.createCustomer = async (req, res) => {
         res.status(201).json(customer);
 
     } catch (err) {
-        res.status(400).json({ error: 'An error occurred during the operation.' });
+        res.status(500).json({ error: 'An error occurred during the operation.' });
     }
 };
+
+
+// อ่านข้อมูลลูกค้าทั้งหมด 
+exports.getCustomer = async (req, res) => {
+    try {
+        const customers = await Customer.findAll(); // ดึงข้อมูลลูกค้าทั้งหมด
+        if (customers.length === 0) { // ตรวจสอบว่ามีลูกค้าหรือไม่
+            return res.status(404).json({ message: 'No customers found' });
+        }
+        res.status(200).json(customers); // ส่งข้อมูลลูกค้า
+    } catch (err) {
+        res.status(500).json({ error: 'An error occurred during the operation.' }); // ส่งข้อผิดพลาดถ้ามี
+    }
+};
+
+// อ่านข้อมูลลูกค้าตาม ID
+exports.getCustomerById = async (req, res) => {
+    try {
+        const customer = await Customer.findByPk(req.params.id);
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+        res.status(200).json(customer);
+    } catch (err) {
+        res.status(500).json({ error: 'An error occurred during the operation.' });
+    }
+};
+
+// แก้ไขข้อมูลลูกค้า
+
+exports.updateCustomer = async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        const customer = await Customer.findByPk(req.params.id);
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+
+        // ตรวจสอบว่ามีการเปลี่ยนแปลง email หรือไม่
+        if (email && email !== customer.email) {
+            const existingCustomer = await Customer.findOne({ where: { email } });
+            if (existingCustomer) {
+                return res.status(400).json({ error: 'Email already exists' });
+            }
+        }
+
+        // แฮชรหัสผ่านใหม่ถ้ามีการส่งเข้ามา
+        if (password) {
+            req.body.password = await bcrypt.hash(password, 10);
+        }
+
+        await customer.update(req.body);
+        res.status(200).json(customer);
+    } catch (err) {
+        res.status(500).json({ error: 'An error occurred during the operation.' });
+    }
+};
+
+// exports.updateCustomer = async (req, res) => {
+//     const { email, password } = req.body;
+//     try {
+//         const existingCustomer = await Customer.findOne({
+//             where: { email: email }
+//         });
+
+//         if (existingCustomer) {
+//             return res.status(400).json({ error: 'Email already exists' });
+//         }
+
+//         const customer = await Customer.findByPk(req.params.id);
+//         if (!customer) {
+//             return res.status(404).json({ error: 'Customer not found' });
+//         }
+//         await customer.update(req.body);
+//         res.status(200).json(customer);
+//     } catch (err) {
+//         res.status(500).json({ error: 'An error occurred during the operation.' });
+//     }
+// };
+
+// ลบข้อมูลลูกค้า
+exports.deleteCustomer = async (req, res) => {
+    try {
+        const customer = await Customer.findByPk(req.params.id);
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+        await customer.destroy();
+        res.status(204).send();
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'An error occurred during the operation.' });
+    }
+};
+
+
 
 // ฟังก์ชันสำหรับการล็อกอินลูกค้า
 exports.loginCustomer = async (req, res) => {
@@ -56,72 +153,11 @@ exports.loginCustomer = async (req, res) => {
             return res.status(400).json({ error: 'Invalid credentials.' });
         }
 
-        // หากล็อกอินสำเร็จ
-        res.status(200).json({ message: 'Login successful', customer });
+        // หากล็อกอินสำเร็จ สร้าง token และส่งเป็นการตอบกลับ
+        const token = generateToken({ id: customer.customerID, email: customer.email });
+        res.status(200).json({ message: 'Login successful', token });
     } catch (err) {
-        res.status(400).json({ error: 'An error occurred during the operation.' });
+        res.status(500).json({ error: 'An error occurred during the operation.' });
     }
 };
 
-// อ่านข้อมูลลูกค้าทั้งหมด
-exports.getCustomer = async (req, res) => {
-    try {
-        const customers = await Customer.findAll(); // ดึงข้อมูลลูกค้าทั้งหมด
-        if (customers.length === 0) { // ตรวจสอบว่ามีลูกค้าหรือไม่
-            return res.status(404).json({ message: 'No customers found' });
-        }
-        res.status(200).json(customers); // ส่งข้อมูลลูกค้า
-    } catch (err) {
-        res.status(400).json({ error: 'An error occurred during the operation.' }); // ส่งข้อผิดพลาดถ้ามี
-    }
-};
-
-// อ่านข้อมูลลูกค้าตาม ID
-exports.getCustomerById = async (req, res) => {
-    try {
-        const customer = await Customer.findByPk(req.params.id);
-        if (!customer) {
-            return res.status(404).json({ error: 'Customer not found' });
-        }
-        res.status(200).json(customer);
-    } catch (err) {
-        res.status(400).json({ error: 'An error occurred during the operation.' });
-    }
-};
-
-// แก้ไขข้อมูลลูกค้า
-exports.updateCustomer = async (req, res) => {
-    const { email } = req.body;
-    try {
-        const existingCustomer = await Customer.findOne({
-            where: { email: email }
-        });
-
-        if (existingCustomer) {
-            return res.status(400).json({ error: 'Email already exists' });
-        }
-
-        const customer = await Customer.findByPk(req.params.id);
-        if (!customer) {
-            return res.status(404).json({ error: 'Customer not found' });
-        }
-        await customer.update(req.body);
-        res.status(200).json(customer);
-    } catch (err) {
-        res.status(400).json({ error: 'An error occurred during the operation.' });
-    }
-};
-
-// ลบข้อมูลลูกค้า
-exports.deleteCustomer = async (req, res) => {
-    try {
-        const customer = await Customer.findByPk(req.params.id);
-        if (!customer) {
-            return res.status(404).json({ error: 'Customer not found' });
-        }
-        await customer.destroy();
-        res.status(204).send();
-    } catch (err) {
-        res.status(400).json({ error: 'An error occurred during the operation.' });
-    }
-};
